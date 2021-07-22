@@ -1,2 +1,12 @@
-# Oculus rift s setup
+# Oculus Quest 2 setup
 
+Quest 2 was chosen over Rift S due to the guardian & hand tracking features.
+
+## Environments
+  - OS: Windows 10
+  - Unity: 2020.3.14f1
+    - Required Assets: Latest version of RosSharp, Oculus Integration SDK
+
+## How it's done
+
+The Oculus Quest 2 will communicate with the Ubuntu side(Kinova) via rosbridge.

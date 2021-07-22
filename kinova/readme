@@ -1,2 +1,3 @@
 # Kinova gen3 lite setup
 
+Connect Rosbridge: roslaunch rosbridge_server rosbridge_websocket.launch

@@ -31,9 +31,6 @@ class RotateJoint(object):
                 rospy.get_namespace() + 'move_group/display_planned_path',
                 moveit_msgs.msg.DisplayTrajectory,
                 queue_size=20)
-            # play_joint_trajectory_full_name = '/' + self.robot_name + '/base/play_joint_trajectory'
-            # rospy.wait_for_service(play_joint_trajectory_full_name)
-            # self.play_joint_trajectory = rospy.ServiceProxy(play_joint_trajectory_full_name, PlayJointTrajectory)
 
         except Exception as e:
             print (e)

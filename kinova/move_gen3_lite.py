@@ -16,7 +16,7 @@ from sensor_msgs.msg import PointCloud2
 from cv_bridge import CvBridge, CvBridgeError
 from control_msgs.msg import GripperCommand
 
-sys.path.append('/home/cylee/PycharmProjects/pythonProject')
+sys.path.append('/home/cylee/Pycharmprojects/gulliver_project/kinova/yolo.py')
 from yolo import net, meta, detect, draw_bounding_box
 
 class MoveWithYolo(object):
@@ -43,7 +43,7 @@ class MoveWithYolo(object):
                 self.gripper_joint_name = gripper_joint_names[0]
             else:
                 self.gripper_joint_name = ""
-            self.degrees_of_freedom = rospy.get_param(rospy.get_namespace() + "degrees_of_freedom", 6)
+            self.degrees_of_freedom = rospy.get_param(rospy.get_namespace() + "degrees_of_freedom", 7)
             # Create the MoveItInterface necessary objects
             arm_group_name = "arm"
             self.robot = moveit_commander.RobotCommander("robot_description")
@@ -90,6 +90,18 @@ class MoveWithYolo(object):
         joint_positions[3] = -1.7796536700199246
         joint_positions[4] = -2.1946516658419917
         joint_positions[5] = -1.4156512143312403
+        self.arm_group.set_joint_value_target(joint_positions)
+        self.arm_group.go(wait=True)
+        return self.arm_group.get_current_pose().pose
+
+    def home_pose_3(self):
+        joint_positions = self.arm_group.get_current_joint_values()
+        joint_positions[0] = -0.07124435284958164
+        joint_positions[1] = 0.28432546956347565
+        joint_positions[2] = 0.8544049282991455
+        joint_positions[3] = 1.5463900533009745
+        joint_positions[4] = 1.9835516746630073
+        joint_positions[5] = -1.563087008071335
         self.arm_group.set_joint_value_target(joint_positions)
         self.arm_group.go(wait=True)
         return self.arm_group.get_current_pose().pose
@@ -144,6 +156,18 @@ class MoveWithYolo(object):
 
         return cur_pose
 
+    def target_pose_3(self, coordinate):
+        x = coordinate[0]
+        y = coordinate[1]
+        z = coordinate[2]
+
+        cur_pose = self.arm_group.get_current_pose().pose
+        cur_pose.position.x += -y + 0.36
+        cur_pose.position.y += -x - 0.07
+        cur_pose.position.z += -z + 0.2
+
+        return cur_pose
+
     def waypoint(self):
         joint_positions = self.arm_group.get_current_joint_values()
         joint_positions[0] = -0.45383247715371144
@@ -180,7 +204,7 @@ if __name__ == '__main__':
     moveclass.center_rgb = (None, None)
 
     print('1. [Start] go to home pose')
-    moveclass.home_pose_2()
+    moveclass.home_pose_3()
     print('1. [End] go to home pose')
     print('2. [Start] Yolo detection')
     moveclass.disable_img_sub = False
@@ -190,20 +214,21 @@ if __name__ == '__main__':
     print('2. [End] Yolo detection')
     center_pointcloud = moveclass.get_object_pc()
     cur_object_name = moveclass.name
-    print('3.', cur_object_name, 'Target Pose :', moveclass.target_pose_1(center_pointcloud))
+    print('3.', cur_object_name, 'Target Pose :', moveclass.target_pose_3(center_pointcloud))
     # # print('4. [Start] go to waypoint')
     # orientation = moveclass.waypoint()
     # print('4. [End] go to waypoint')
     print('5. [Start] go to target pose')
     # moveclass.target_pose(center_pointcloud).orientation = orientation
-    moveclass.arm_group.set_pose_target(moveclass.target_pose_1(center_pointcloud))
+    moveclass.arm_group.set_pose_target(moveclass.target_pose_3(center_pointcloud))
     moveclass.arm_group.go(wait=True)
     print('5. [End] go to target pose')
     print('6. [Start] Pick', cur_object_name)
     moveclass.pick()
     print('6. [End] Pick', cur_object_name)
     moveclass.open_gripper()
-    moveclass.home_pose_2()
+    moveclass.home_pose_3()
+    # print(moveclass.arm_group.get_current_joint_values())
 
 
 

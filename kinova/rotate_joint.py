@@ -93,7 +93,7 @@ class RotateJoint(object):
                 print("current joint_4 angle: {0:0.1f}".format(joint_positions[3] * 180))
         elif num == 5:
             current = joint_positions[4]
-            angle = flaot(angle) / 180
+            angle = float(angle) / 180
             joint_positions[4] += angle
             if joint_positions[4] < -144.97 / 180 or joint_positions[4] > 145.0 / 180:
                 print("Give an angle between (-144.97, +145.0)")
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     joints[5] = 0
     example.arm_group.set_joint_value_target(joints)
     example.arm_group.go(wait=True)
-    while raw_input("Press q to quit : ") != 'q':
+    while input("Press q to quit : ") != 'q':
         joint_num = input("Give the number of joint to rotate : ")
         joint_angle = input("Give the rotation angle in degrees : ")
         example.change_joint_angle(joint_num, joint_angle)

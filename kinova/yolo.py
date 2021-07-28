@@ -224,8 +224,8 @@ def listener():
     rospy.Subscriber("camera/depth_registered/points", PointCloud2, pc_callback)
     rospy.spin()
 
-net = load_net(makedir("darknet/cfg/yolo9000.cfg"), makedir("yolov3-tiny.weights"), 0)
-meta = load_meta(makedir("cfg/coco.data"))
+net = load_net(makedir("darknet/cfg/yolo9000.cfg"), makedir("yolo9000-weights"), 0)
+meta = load_meta(makedir("darknet/cfg/combine9k.data"))
 
 
 if __name__ == "__main__":

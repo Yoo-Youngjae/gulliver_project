@@ -29,7 +29,7 @@ def c_array(ctype, values):
 '''
 
 def makedir(dir):
-    dir = os.path.expanduser(os.path.join('~', 'yolo-9000', dir))
+    dir = os.path.expanduser(os.path.join('~', 'darknet', dir))
     return dir
 
 
@@ -62,7 +62,7 @@ class METADATA(Structure):
 
 
 # lib = CDLL("/home/pjreddie/documents/darknet/libdarknet.so", RTLD_GLOBAL)
-lib = CDLL("/home/cylee/darknet/libdarknet.so", RTLD_GLOBAL)
+lib = CDLL("/home/tidy/yolo-9000/darknet/libdarknet.so", RTLD_GLOBAL)
 lib.network_width.argtypes = [c_void_p]
 lib.network_width.restype = c_int
 lib.network_height.argtypes = [c_void_p]
@@ -199,9 +199,9 @@ def image_callback(img_msg):
     r = detect(net, meta, cv_image)
     for item in r:
         name, prob, box_info = item
-        if prob >= 0.01:
+        if prob >= 0.05:
+            # img = draw_bounding_box(cv_image, item)
             img = draw_bounding_box(cv_image, item)
-            # img = draw_bounding_box(image, item)
             center_list.append((int(box_info[0]), int(box_info[1])))
     cv2.imshow('img', cv_image)
     cv2.waitKey(3)
@@ -221,11 +221,11 @@ def pc_callback(point_msg):
 def listener():
     rospy.init_node('listener', anonymous=True)
     rospy.Subscriber("/camera/color/image_raw", Image, image_callback)
-    rospy.Subscriber("camera/depth_registered/points", PointCloud2, pc_callback)
+    rospy.Subscriber("/camera/depth_registered/points", PointCloud2, pc_callback)
     rospy.spin()
 
-net = load_net(makedir("darknet/cfg/yolo9000.cfg"), makedir("yolo9000-weights"), 0)
-meta = load_meta(makedir("darknet/cfg/combine9k.data"))
+net = load_net(makedir("cfg/yolov3.cfg"), makedir("yolov3.weights"), 0)
+meta = load_meta(makedir("cfg/coco.data"))
 
 
 if __name__ == "__main__":

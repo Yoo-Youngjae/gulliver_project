@@ -1,3 +1,5 @@
 # Kinova gen3 lite setup
 
 Connect Rosbridge: roslaunch rosbridge_server rosbridge_websocket.launch
+Start kortex_driver: roslaunch kortex_driver kortex_driver.launch arm:=gen3_lite
+Start realsense: roslaunch realsense2_camera rs_rgbd.launch enable_pointcloud2:=true

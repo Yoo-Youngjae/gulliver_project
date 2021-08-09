@@ -197,6 +197,7 @@ def image_callback(img_msg):
     cv_image = bridge.imgmsg_to_cv2(img_msg, "passthrough")
     cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
     r = detect(net, meta, cv_image)
+    print(r)
     for item in r:
         name, prob, box_info = item
         if prob >= 0.05:
@@ -207,21 +208,20 @@ def image_callback(img_msg):
     cv2.waitKey(3)
 
 depth = None
-center_coordinate = None
 
 
 def pc_callback(point_msg):
     pc = ros_numpy.numpify(point_msg)
-    for center in center_list:
-        x = center[0][0]
-        y = center[0][1]
-        center_coordinate.append([pc[y][x][0], pc[y][x][1], pc[y][x][2]])
+    # for center in center_list:
+    #     x = center[0]
+    #     y = center[1]
+    #     center_coordinate.append([pc[y][x][0], pc[y][x][1], pc[y][x][2]])
 
 
 def listener():
     rospy.init_node('listener', anonymous=True)
     rospy.Subscriber("/camera/color/image_raw", Image, image_callback)
-    rospy.Subscriber("/camera/depth_registered/points", PointCloud2, pc_callback)
+    # rospy.Subscriber("/camera/depth_registered/points", PointCloud2, pc_callback)
     rospy.spin()
 
 net = load_net(makedir("cfg/yolov3.cfg"), makedir("yolov3.weights"), 0)

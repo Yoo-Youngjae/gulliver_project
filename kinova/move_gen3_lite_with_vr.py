@@ -84,6 +84,12 @@ class MoveRobotWithVR(object):
         joint_positions[3] = 1.5463900533009745
         joint_positions[4] = 1.9835516746630073
         joint_positions[5] = -1.563087008071335
+        # joint_positions[0] = -0.2260059701162671
+        # joint_positions[1] = 0.21158548544570538
+        # joint_positions[2] = 0.23287532783201684
+        # joint_positions[3] = 1.680007236776866
+        # joint_positions[4] = 2.5305868004862218
+        # joint_positions[5] = -1.5910832227146843
         self.arm_group.set_joint_value_target(joint_positions)
         self.arm_group.go(wait=True)
         return self.arm_group.get_current_pose().pose
@@ -111,9 +117,9 @@ class MoveRobotWithVR(object):
         self.pc = ros_numpy.numpify(point_msg)
 
     def obj_id_callback(self, received_id):
-        if self.object_id != received_id and received_id is not None:
+        if self.object_id != received_id.data and received_id.data is not None:
             self.obj_id_num += 1
-            self.object_id = received_id
+            self.object_id = received_id.data
         else:
             if self.obj_id_num == 3:
                 self.obj_id_num = -1
@@ -262,7 +268,6 @@ if __name__ == '__main__':
     moveclass.center_rgb_list = []
     object_list = []
 
-    # moveclass.home_pose()
     moveclass.disable_img_sub = False
     while len(moveclass.center_rgb_list) != 3:
         pass
@@ -272,9 +277,9 @@ if __name__ == '__main__':
         for i, name in enumerate(moveclass.name_list):
             if name == 'bottle':
                 object_list += [0.0, pc_coordinate[i][0], pc_coordinate[i][1]]
-            if name == 'teddy bear':
+            elif name == 'teddy bear':
                 object_list += [1.0, pc_coordinate[i][0], pc_coordinate[i][1]]
-            if name == 'cup':
+            elif name == 'cup':
                 object_list += [2.0, pc_coordinate[i][0], pc_coordinate[i][1]]
 
         obj_list_pub = rospy.Publisher('object_list', Float64MultiArray, queue_size=20)
@@ -292,7 +297,6 @@ if __name__ == '__main__':
     sub_list_2 = [object_list[3], object_list[4], object_list[5]]
     sub_list_3 = [object_list[6], object_list[7], object_list[8]]
     object_list = [sub_list_1, sub_list_2, sub_list_3]
-    print(object_list)
     while moveclass.object_id is None:
         pass
     if moveclass.object_id is not None:

@@ -41,6 +41,7 @@ class MoveRobotWithVR(object):
         self.object_id = None
         self.obj_id_num = 0
         self.obj_dict = {}
+        self.angle = 0
 
         self.disable_img_sub = True
 
@@ -84,12 +85,7 @@ class MoveRobotWithVR(object):
         joint_positions[3] = 1.5463900533009745
         joint_positions[4] = 1.9835516746630073
         joint_positions[5] = -1.563087008071335
-        # joint_positions[0] = -0.2260059701162671
-        # joint_positions[1] = 0.21158548544570538
-        # joint_positions[2] = 0.23287532783201684
-        # joint_positions[3] = 1.680007236776866
-        # joint_positions[4] = 2.5305868004862218
-        # joint_positions[5] = -1.5910832227146843
+
         self.arm_group.set_joint_value_target(joint_positions)
         self.arm_group.go(wait=True)
         return self.arm_group.get_current_pose().pose
@@ -157,6 +153,40 @@ class MoveRobotWithVR(object):
         constraint.joint_constraints.append(joint_constraint)
         self.arm_group.set_path_constraints(constraint)
 
+    def set_rotation_constraint(self):
+        self.arm_group.clear_path_constraints()
+        constraint = Constraints()
+        joint_constraint_1 = JointConstraint()
+
+        joint_constraint_1.position = self.arm_group.get_current_joint_values()[0]
+        joint_constraint_1.tolerance_above = math.pi / 6
+        joint_constraint_1.tolerance_below = math.pi / 6
+        joint_constraint_1.joint_name = 'joint_1'
+        joint_constraint_1.weight = 1
+        constraint.joint_constraints.append(joint_constraint_1)
+
+        joint_constraint_2 = JointConstraint()
+        joint_constraint_2.position = 0
+        joint_constraint_2.tolerance_above = math.pi
+        joint_constraint_2.tolerance_below = 0
+        joint_constraint_2.joint_name = 'joint_3'
+        joint_constraint_2.weight = 1
+        constraint.joint_constraints.append(joint_constraint_2)
+
+        self.arm_group.set_path_constraints(constraint)
+
+    def set_base_constraint(self):
+        self.arm_group.clear_path_constraints()
+        constraint = Constraints()
+        joint_constraint_1 = JointConstraint()
+
+        joint_constraint_1.position = self.arm_group.get_current_joint_values()[0]
+        joint_constraint_1.tolerance_above = math.pi / 6
+        joint_constraint_1.tolerance_below = math.pi / 6
+        joint_constraint_1.joint_name = 'joint_1'
+        joint_constraint_1.weight = 1
+        constraint.joint_constraints.append(joint_constraint_1)
+
     def set_pose(self, coordinate, obj_name):
         x = coordinate[0]
         y = coordinate[1]
@@ -164,18 +194,18 @@ class MoveRobotWithVR(object):
 
         cur_pose = self.arm_group.get_current_pose().pose
 
-        cup_offset_x_left = 0.35
-        cup_offset_x_right = 0.3
+        cup_offset_x_left = 0.44 - 0.05
+        cup_offset_x_right = 0.44 - 0.05
         cup_offset_y = 0
         cup_offset_z = 0.05
-        bottle_offset_x_left = 0.20
-        bottle_offset_x_right = 0.25
+        bottle_offset_x_left = 0.44 - 0.13
+        bottle_offset_x_right = 0.44 - 0.13
         bottle_offset_y = 0
         bottle_offset_z = 0.2
-        teddy_bear_offset_x_left = 0.31
-        teddy_bear_offset_x_right = 0.31
+        teddy_bear_offset_x_left = 0.44 + 0.04
+        teddy_bear_offset_x_right = 0.44 + 0.04
         teddy_bear_offset_y = 0
-        teddy_bear_offset_z = 0.05
+        teddy_bear_offset_z = 0.03
 
         cup_offset_list = [cup_offset_x_left, cup_offset_x_right, cup_offset_y, cup_offset_z]
         bottle_offset_list = [bottle_offset_x_left, bottle_offset_x_right, bottle_offset_y, bottle_offset_z]
@@ -183,9 +213,9 @@ class MoveRobotWithVR(object):
 
         self.obj_dict = {"cup": cup_offset_list, "bottle": bottle_offset_list, "teddy bear": teddy_bear_offset_list}
         if x < 0:
-            cur_pose.position.x += -math.sin(58) * y + self.obj_dict[obj_name][0]
+            cur_pose.position.x += (-y / math.sin(58)) + self.obj_dict[obj_name][0]
         else:
-            cur_pose.position.x += -math.sin(58) * y + self.obj_dict[obj_name][1]
+            cur_pose.position.x += (-y / math.sin(58)) + self.obj_dict[obj_name][1]
         cur_pose.position.y += -x + self.obj_dict[obj_name][2]
         cur_pose.position.z = self.obj_dict[obj_name][3]
 
@@ -203,20 +233,20 @@ class MoveRobotWithVR(object):
         goal_pose = self.set_pose(pc_coordinate, 'bottle')
         goal_pose.position.x -= position_diff_x
         goal_pose.position.y -= position_diff_y
-        # self.set_base_constraint()
         self.arm_group.set_pose_target(goal_pose)
+        self.set_rotation_constraint()
         self.arm_group.go(wait=True)
+        self.arm_group.clear_path_constraints()
 
         cur_pose = self.arm_group.get_current_pose().pose
-        cur_pose.position.x += 0.1
-        cur_pose.position.z -= 0.13
-        self.set_joint_5_constraint()
+        cur_pose.position.z -= 0.1
+        self.set_base_constraint()
         self.arm_group.set_pose_target(cur_pose)
         self.arm_group.go(wait=True)
+        self.arm_group.clear_path_constraints()
 
     def pick_teddy_bear(self, pc_coordinate):
         goal_pose = self.set_pose(pc_coordinate, 'teddy bear')
-        # self.set_base_constraint()
         self.arm_group.set_pose_target(goal_pose)
         self.arm_group.go(wait=True)
 
@@ -230,35 +260,69 @@ class MoveRobotWithVR(object):
         goal_pose = self.set_pose(pc_coordinate, 'cup')
         goal_pose.position.x -= position_diff_x + 0.1
         goal_pose.position.y -= position_diff_y
-        # self.set_base_constraint()
         self.arm_group.set_pose_target(goal_pose)
         self.arm_group.go(wait=True)
 
         cur_pose = self.arm_group.get_current_pose().pose
-        cur_pose.position.x += 0.1
+        cur_pose.position.x += 0.15
 
         self.arm_group.set_pose_target(cur_pose)
-        # self.set_joint_5_constraint()
         self.arm_group.go(wait=True)
 
         return cur_pose
 
     def pick(self):
-        gripper_joint = self.robot.get_joint('right_finger_bottom_joint')
         gripper_value = self.gripper_group.get_current_joint_values()
         gripper_value[0] = -0.07
-        gripper_value[2] = -0.07
+        gripper_value[2] = 0.07
         self.gripper_group.set_joint_value_target(gripper_value)
         self.gripper_group.go(wait=True)
 
     def open_gripper(self):
-        gripper_joint = self.robot.get_joint('right_finger_bottom_joint')
         gripper_value = self.gripper_group.get_current_joint_values()
         gripper_value[0] = -0.96
         gripper_value[2] = 0.96
         self.gripper_group.set_joint_value_target(gripper_value)
         self.gripper_group.go(wait=True)
 
+    def place(self, id):
+        place_dict = {2: [0.08, 0.5, 0.25], 0: [-0.2, -0.15, 0.25], 1: [-0.2, 0.15, 0.25]}
+
+        if id == 2:
+            joint_positions = self.arm_group.get_current_joint_values()
+            joint_positions[0] = 0.0001241033067976925
+            joint_positions[1] = -0.28029983525971147
+            joint_positions[2] = 1.3112899206943054
+            joint_positions[3] = -0.0009912285577282631
+            joint_positions[4] = -1.0472843702481347
+            joint_positions[5] = -0.00042184471666839585
+            self.arm_group.set_joint_value_target(joint_positions)
+            self.arm_group.go(wait=True)
+
+            cur_pose = self.arm_group.get_current_pose().pose
+            cur_pose.position.x = place_dict[id][0]
+            cur_pose.position.y = place_dict[id][1]
+            cur_pose.position.z = place_dict[id][2]
+            self.arm_group.set_pose_target(cur_pose)
+            self.arm_group.go(wait=True)
+
+        else:
+            joint_positions = self.arm_group.get_current_joint_values()
+            joint_positions[0] = -0.13965510229931954
+            joint_positions[1] = -0.5898539624617261
+            joint_positions[2] = 0.11399847467360485
+            joint_positions[3] = 1.549371728457427
+            joint_positions[4] = 2.3046921505035205
+            joint_positions[5] = -1.7319165074802543
+            self.arm_group.set_joint_value_target(joint_positions)
+            self.arm_group.go(wait=True)
+
+            cur_pose = self.arm_group.get_current_pose().pose
+            cur_pose.position.x = place_dict[id][0]
+            cur_pose.position.y = place_dict[id][1]
+            cur_pose.position.z = place_dict[id][2]
+            self.arm_group.set_pose_target(cur_pose)
+            self.arm_group.go(wait=True)
 
 
 if __name__ == '__main__':
@@ -279,7 +343,7 @@ if __name__ == '__main__':
                 object_list += [0.0, pc_coordinate[i][0], pc_coordinate[i][1]]
             elif name == 'teddy bear':
                 object_list += [1.0, pc_coordinate[i][0], pc_coordinate[i][1]]
-            elif name == 'cup':
+            elif name == 'cup' or name == 'bowl':
                 object_list += [2.0, pc_coordinate[i][0], pc_coordinate[i][1]]
 
         obj_list_pub = rospy.Publisher('object_list', Float64MultiArray, queue_size=20)
@@ -315,11 +379,15 @@ if __name__ == '__main__':
                         object_name_idx = moveclass.name_list.index('teddy bear')
                         moveclass.pick_teddy_bear(moveclass.coordinate_list[object_name_idx])
                     else:
-                        object_name_idx = moveclass.name_list.index('cup')
+                        if 'cup' in moveclass.name_list:
+                            object_name_idx = moveclass.name_list.index('cup')
+                        else:
+                            object_name_idx = moveclass.name_list.index('cup')
                         moveclass.pick_cup(moveclass.coordinate_list[object_name_idx])
                     moveclass.pick()
-                    moveclass.home_pose()
+                    moveclass.place(object_id)
                     moveclass.open_gripper()
+                    moveclass.home_pose()
                     activation_pub.publish(True)
 
 

@@ -4,29 +4,11 @@ import random
 import os.path
 import rospy
 import cv2
+import numpy as np
+import ros_numpy
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import PointCloud2
-import numpy as np
-import ros_numpy
-
-
-'''def sample(probs):
-    s = sum(probs)
-    probs = [a / s for a in probs]
-    r = random.uniform(0, 1)
-    for i in range(len(probs)):
-        r = r - probs[i]
-        if r <= 0:
-            return i
-    return len(probs) - 1
-
-
-def c_array(ctype, values):
-    arr = (ctype * len(values))()
-    arr[:] = values
-    return arr
-'''
 
 def makedir(dir):
     dir = os.path.expanduser(os.path.join('~', 'darknet', dir))
@@ -62,7 +44,7 @@ class METADATA(Structure):
 
 
 # lib = CDLL("/home/pjreddie/documents/darknet/libdarknet.so", RTLD_GLOBAL)
-lib = CDLL("/home/tidy/yolo-9000/darknet/libdarknet.so", RTLD_GLOBAL)
+lib = CDLL("/home/tidy/darknet/libdarknet.so", RTLD_GLOBAL)
 lib.network_width.argtypes = [c_void_p]
 lib.network_width.restype = c_int
 lib.network_height.argtypes = [c_void_p]
@@ -187,11 +169,10 @@ def draw_bounding_box(img, item):
     # start = (x, y)
     # end = (x+xw,y+yh)
 
-    cv2.rectangle(img, start, end, color, 2)  # todo rectangle error  WHY??????
+    cv2.rectangle(img, start, end, color, 2)
     cv2.putText(img, name, (int(x - 10), int(y - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
     return img
 
-center_list = []
 def image_callback(img_msg):
     bridge = CvBridge()
     cv_image = bridge.imgmsg_to_cv2(img_msg, "passthrough")
@@ -201,27 +182,13 @@ def image_callback(img_msg):
     for item in r:
         name, prob, box_info = item
         if prob >= 0.05:
-            # img = draw_bounding_box(cv_image, item)
             img = draw_bounding_box(cv_image, item)
-            center_list.append((int(box_info[0]), int(box_info[1])))
     cv2.imshow('img', cv_image)
     cv2.waitKey(3)
-
-depth = None
-
-
-def pc_callback(point_msg):
-    pc = ros_numpy.numpify(point_msg)
-    # for center in center_list:
-    #     x = center[0]
-    #     y = center[1]
-    #     center_coordinate.append([pc[y][x][0], pc[y][x][1], pc[y][x][2]])
-
 
 def listener():
     rospy.init_node('listener', anonymous=True)
     rospy.Subscriber("/camera/color/image_raw", Image, image_callback)
-    # rospy.Subscriber("/camera/depth_registered/points", PointCloud2, pc_callback)
     rospy.spin()
 
 net = load_net(makedir("cfg/yolov3.cfg"), makedir("yolov3.weights"), 0)

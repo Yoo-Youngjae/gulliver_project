@@ -7,7 +7,7 @@ This project is about Picking and Placing 6 objects with 3 classes. The robot us
 3. The robot moves to the coordinate and pick detected object.
 4. Place the object. Place location is differed by the classes of objects.
 ## Getting Started
-### Installation
+### 1. Installation
 #### 1. ROS
 + [Install ROS](http://wiki.ros.org/ROS/Installation)
 + [Install ROS Kortex](https://github.com/Kinovarobotics/ros_kortex)
@@ -18,10 +18,10 @@ This project is about Picking and Placing 6 objects with 3 classes. The robot us
 + [Install CUDA](https://developer.nvidia.com/cuda-10.2-download-archive)
 + [Install YOLO](https://pjreddie.com/darknet/yolo/)
   + Should change CUDNN=0 to CUDNN=1 in the darknet Makefile to use CUDA.
-### Kinova Gen3 lite Settings
+### 2. Kinova Gen3 lite Settings
 [Kinova Gen3 lite User Guide](https://www.kinovarobotics.com/en/resources/gen3-lite-technical-resources)
 + explained in 45-52.
-### Launch
+### 3. Launch
 + Start kortex_driver
   ```
   roslaunch kortex_driver kortex_driver.launch arm:=gen3_lite

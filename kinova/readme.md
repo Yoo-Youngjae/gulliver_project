@@ -13,7 +13,7 @@ This project is about Picking and Placing 6 objects with 3 classes. The robot us
 + [Install ROS Kortex](https://github.com/Kinovarobotics/ros_kortex)
 + [Install Realsense ROS](https://github.com/IntelRealSense/realsense-ros)
 #### 2. YOLO
-+[Install Nvidia Driver](https://www.nvidia.co.kr/Download/index.aspx?lang=kr)
++ [Install Nvidia Driver](https://www.nvidia.co.kr/Download/index.aspx?lang=kr)
   + If possible, install version 470.
 + [Install CUDA](https://developer.nvidia.com/cuda-10.2-download-archive)
 + [Install YOLO](https://pjreddie.com/darknet/yolo/)

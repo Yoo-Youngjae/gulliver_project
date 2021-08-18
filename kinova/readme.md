@@ -24,8 +24,9 @@ This project is about Picking and Placing 6 objects with 3 classes. The robot us
 ### 3. Launch
 + Start kortex_driver
   ```
-  roslaunch kortex_driver kortex_driver.launch arm:=gen3_lite
+  roslaunch kortex_driver kortex_driver.launch arm:=gen3_lite ip_address:=192.168.2.10
   ```
+  + Should change ip_address to 192.168.1.10 if you connected the robot to your computer by USB.
 + Start realsense
   ```
   roslaunch realsense2_camera rs_rgbd.launch enable_pointcloud2:=true

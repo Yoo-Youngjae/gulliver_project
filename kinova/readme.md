@@ -23,10 +23,10 @@ This project is about Picking and Placing 6 objects with 3 classes. The robot us
 + explained in 45-52.
 ### Launch
 + Start kortex_driver
- '''
- roslaunch kortex_driver kortex_driver.launch arm:=gen3_lite
- '''
+  '''
+  roslaunch kortex_driver kortex_driver.launch arm:=gen3_lite
+  '''
 + Start realsense
- '''
- roslaunch realsense2_camera rs_rgbd.launch enable_pointcloud2:=true
- '''
+  '''
+  roslaunch realsense2_camera rs_rgbd.launch enable_pointcloud2:=true
+  '''

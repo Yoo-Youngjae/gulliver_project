@@ -20,7 +20,7 @@ This project is about Picking and Placing 6 objects with 3 classes. The robot us
     + Should change CUDNN=0 to CUDNN=1 in the darknet Makefile to use CUDA.
 ### 2. Kinova Gen3 lite Settings
 [Kinova Gen3 lite User Guide](https://www.kinovarobotics.com/en/resources/gen3-lite-technical-resources)
-+ explained in 45-52.
++ explained in page 45-52.
 ### 3. Launch
 + Start kortex_driver
   ```

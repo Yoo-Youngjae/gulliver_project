@@ -30,3 +30,4 @@ This project is about Picking and Placing 6 objects with 3 classes. The robot us
   ```
   roslaunch realsense2_camera rs_rgbd.launch enable_pointcloud2:=true
   ```
+## How To Use

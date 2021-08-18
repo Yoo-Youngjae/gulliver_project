@@ -20,10 +20,10 @@ from moveit_msgs.msg import Constraints, JointConstraint
 sys.path.append('/home/tidy/Pycharmprojects/gulliver_project/kinova/yolo.py')
 from yolo import net, meta, detect, draw_bounding_box
 
+
 class MoveWithYolo(object):
     def __init__(self):
 
-        # Initialize the node
         super(MoveWithYolo, self).__init__()
         moveit_commander.roscpp_initialize(sys.argv)
 
@@ -32,13 +32,11 @@ class MoveWithYolo(object):
         self.sub_pc = rospy.Subscriber("/camera/depth_registered/points", PointCloud2, self.pc_callback)
 
         self.pc_coordinate = []
-        self.center_rgb = (None, None) # x, y in rgb image
+        self.center_rgb = (None, None)
         self.picked = []
         self.name = None
-        self.name_list = []
         self.obj_dict = {}
         self.angle = 0
-        self.obj_count = 0
         self.obj_box = (0, 0, 0, 0)
         self.min_point_y = 0
         self.min_y = 0
@@ -56,6 +54,7 @@ class MoveWithYolo(object):
             else:
                 self.gripper_joint_name = ""
             self.degrees_of_freedom = rospy.get_param(rospy.get_namespace() + "degrees_of_freedom", 7)
+
             # Create the MoveItInterface necessary objects
             arm_group_name = "arm"
             self.robot = moveit_commander.RobotCommander("robot_description")
@@ -66,6 +65,7 @@ class MoveWithYolo(object):
                 moveit_msgs.msg.DisplayTrajectory,
                 queue_size=20)
 
+            # Set velocity and acceleration to max value
             self.arm_group.set_max_velocity_scaling_factor(1)
             self.arm_group.set_max_acceleration_scaling_factor(1)
 
@@ -97,18 +97,18 @@ class MoveWithYolo(object):
         cv_image = bridge.imgmsg_to_cv2(img_msg, "passthrough")
         cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
 
-        ### for show bounding box
+        # for show bounding box
         r = detect(net, meta, cv_image)
         for item in r:
             name, prob, box_info = item
             if prob >= 0.01:
                 draw_bounding_box(cv_image, item)
-                cv_image = cv2.circle(cv_image, (self.min_x, self.min_y), 2, (0, 255, 0), -1)
-                cv_image = cv2.circle(cv_image, (320, 240), 3, (0, 0, 255), -1)
+                cv_image = cv2.circle(cv_image, (self.min_x, self.min_y), 2, (0, 255, 0), -1) # show the location of the point where depth is min
+                cv_image = cv2.circle(cv_image, (320, 240), 3, (0, 0, 255), -1) # show the center of realsense image
 
         cv2.imshow('img', cv_image)
         cv2.waitKey(3)
-        ######
+
         if self.disable_img_sub == False:
             # item = (name, prob, (x, y, w, h))
             cup_list = []
@@ -126,6 +126,7 @@ class MoveWithYolo(object):
             if len(r) == 0:
                 self.end_pick = True
                 return
+
             name, prob, box_info = r[0]
             if prob >= 0.01:
                 self.name = name
@@ -146,8 +147,8 @@ class MoveWithYolo(object):
         center_x = self.center_rgb[0]
         center_y = self.center_rgb[1]
         depth_min = 1
-        min_x = 0
-        min_y = 0
+        min_x = 0 # x coordinate of the point where depth is min
+        min_y = 0 # y coordinate of the point where depth is min
 
         for i in range(int(x-w/2), int(x+w/2)):
             for j in range(int(y-h/2), int(y+h/2)):
@@ -162,6 +163,7 @@ class MoveWithYolo(object):
 
         goal_x = self.pc[center_y][center_x][0]
         goal_y = self.pc[min_y][min_x][1]
+        # update pc coordinate until the value is not nan
         while math.isnan(goal_x) or math.isnan(goal_y):
             print("Value is Nan")
             goal_x = self.pc[center_y][center_x][0]
@@ -172,9 +174,10 @@ class MoveWithYolo(object):
         return self.pc_coordinate
 
     def rotate_joints(self):
+        # rotate joint_1 and joint_5 to easily pick objects
         joint_positions = self.arm_group.get_current_joint_values()
         joint_positions[0] += self.angle
-        joint_positions[4] = math.radians(60)
+        joint_positions[4] = math.radians(60) # to make the gripper horizontal
         self.arm_group.set_joint_value_target(joint_positions)
         self.arm_group.go(wait=True)
 
@@ -184,17 +187,18 @@ class MoveWithYolo(object):
         z = coordinate[2]
 
         cur_pose = self.arm_group.get_current_pose().pose
+        initial_offset = 0.44 # offset caused by the difference between center of the robot and center of the camera image
 
-        cup_offset_x_left = 0.44 - 0.05
-        cup_offset_x_right = 0.44 - 0.05
+        cup_offset_x_left = initial_offset - 0.05
+        cup_offset_x_right = initial_offset - 0.05
         cup_offset_y = 0
         cup_offset_z = 0.05
-        bottle_offset_x_left = 0.44 - 0.13
-        bottle_offset_x_right = 0.44 - 0.13
+        bottle_offset_x_left = initial_offset - 0.13
+        bottle_offset_x_right = initial_offset - 0.13
         bottle_offset_y = 0
         bottle_offset_z = 0.2
-        teddy_bear_offset_x_left = 0.44 + 0.04
-        teddy_bear_offset_x_right = 0.44 + 0.04
+        teddy_bear_offset_x_left = initial_offset + 0.04
+        teddy_bear_offset_x_right = initial_offset + 0.04
         teddy_bear_offset_y = 0
         teddy_bear_offset_z = 0.04
 
@@ -204,20 +208,20 @@ class MoveWithYolo(object):
 
         self.obj_dict = {"cup": cup_offset_list, "bottle": bottle_offset_list, "teddy bear": teddy_bear_offset_list}
         if x < 0:
-            cur_pose.position.x += (-y / math.sin(58)) + self.obj_dict[obj_name][0]
+            cur_pose.position.x += (-y / math.sin(58)) + self.obj_dict[obj_name][0] # divide by sin(58) because the camera is oblique
         else:
             cur_pose.position.x += (-y / math.sin(58)) + self.obj_dict[obj_name][1]
         cur_pose.position.y += -x + self.obj_dict[obj_name][2]
         cur_pose.position.z = self.obj_dict[obj_name][3]
 
-        self.angle = math.atan(cur_pose.position.y / cur_pose.position.x)
+        self.angle = math.atan(cur_pose.position.y / cur_pose.position.x) # the angle joint_1 have to rotate by to head for the object.
 
         return cur_pose
 
     def pick_bottle(self, pc_coordinate):
         first_pose = self.arm_group.get_current_pose().pose
         self.rotate_joints()
-        second_pose = self.arm_group.get_current_pose().pose
+        second_pose = self.arm_group.get_current_pose().pose # pose after making the gripper horizontal
         position_diff_x = second_pose.position.x - first_pose.position.x
         position_diff_y = second_pose.position.y - first_pose.position.y
 
@@ -228,6 +232,7 @@ class MoveWithYolo(object):
         self.set_rotation_constraint()
 
         success = self.arm_group.go(wait=True)
+        # Repeat executing the trajectory when the execution failed
         for i in range(3):
             if success:
                 break
@@ -326,37 +331,6 @@ class MoveWithYolo(object):
 
         self.arm_group.set_path_constraints(constraint)
 
-    def set_joint_5_constraint(self):
-        self.arm_group.clear_path_constraints()
-        constraint = Constraints()
-        joint_constraint = JointConstraint()
-        if self.arm_group.get_current_joint_values()[4] > 0:
-            joint_constraint.position = self.arm_group.get_current_joint_values()[4]
-            joint_constraint.tolerance_above = math.pi * 2
-            joint_constraint.tolerance_below = math.pi / 18
-            joint_constraint.joint_name = 'joint_5'
-            joint_constraint.weight = 1
-        else:
-            joint_constraint.position = self.arm_group.get_current_joint_values()[4]
-            joint_constraint.tolerance_above = math.pi / 18
-            joint_constraint.tolerance_below = math.pi * 2
-            joint_constraint.joint_name = 'joint_5'
-            joint_constraint.weight = 1
-        constraint.joint_constraints.append(joint_constraint)
-        self.arm_group.set_path_constraints(constraint)
-
-    def set_joint_3_constraint(self):
-        self.arm_group.clear_path_constraints()
-        constraint = Constraints()
-        joint_constraint = JointConstraint()
-        joint_constraint.position = self.arm_group.get_current_joint_values()[2]
-        joint_constraint.tolerance_above = math.pi * 2
-        joint_constraint.tolerance_below = 0
-        joint_constraint.joint_name = 'joint_3'
-        joint_constraint.weight = 1
-        constraint.joint_constraints.append(joint_constraint)
-        self.arm_group.set_path_constraints(constraint)
-
     def pick(self):
         gripper_value = self.gripper_group.get_current_joint_values()
         gripper_value[0] = -0.07
@@ -426,7 +400,6 @@ class MoveWithYolo(object):
 
 if __name__ == '__main__':
     moveclass = MoveWithYolo()
-    # init variables
 
     print('1. [Start] go to home pose')
     moveclass.home_pose()
@@ -444,7 +417,6 @@ if __name__ == '__main__':
         cur_object_name = moveclass.name
         center_pointcloud = moveclass.get_object_pc(cur_object_name)
         print('target : {0}'.format(cur_object_name))
-        print('target object_list : ', moveclass.object_list)
         print('3. [Start] go to target pose')
         if cur_object_name == 'bottle':
             moveclass.pick_bottle(center_pointcloud)

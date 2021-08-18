@@ -32,3 +32,8 @@ This project is about Picking and Placing 6 objects with 3 classes. The robot us
   roslaunch realsense2_camera rs_rgbd.launch enable_pointcloud2:=true
   ```
 ## How To Use
+1. Power the robot and realsense 2.
+2. Run kortex_driver and realsense 2 by the launch command.
+3. place the objects in the area where the robot can reach and the realsense 2 can detect.
+4. Check whether the objects are being detected properly by running yolo.py.
+5. Run gen3_lite_tidy_up.py

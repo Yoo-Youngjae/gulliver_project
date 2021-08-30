@@ -103,8 +103,8 @@ class MoveWithYolo(object):
             name, prob, box_info = item
             if prob >= 0.01:
                 draw_bounding_box(cv_image, item)
-                cv_image = cv2.circle(cv_image, (self.min_x, self.min_y), 2, (0, 255, 0), -1)
-                cv_image = cv2.circle(cv_image, (320, 240), 3, (0, 0, 255), -1)
+                # cv_image = cv2.circle(cv_image, (self.min_x, self.min_y), 2, (0, 255, 0), -1)
+                # cv_image = cv2.circle(cv_image, (320, 240), 3, (0, 0, 255), -1)
 
         cv2.imshow('img', cv_image)
         cv2.waitKey(3)
@@ -185,16 +185,29 @@ class MoveWithYolo(object):
 
         cur_pose = self.arm_group.get_current_pose().pose
 
-        cup_offset_x_left = 0.44 - 0.05
-        cup_offset_x_right = 0.44 - 0.05
+        # cup_offset_x_left = 0.44 - 0.05
+        # cup_offset_x_right = 0.44 - 0.05
+        # cup_offset_y = 0
+        # cup_offset_z = 0.05
+        # bottle_offset_x_left = 0.44 - 0.13
+        # bottle_offset_x_right = 0.44 - 0.13
+        # bottle_offset_y = 0
+        # bottle_offset_z = 0.2
+        # teddy_bear_offset_x_left = 0.44 + 0.04
+        # teddy_bear_offset_x_right = 0.44 + 0.04
+        # teddy_bear_offset_y = 0
+        # teddy_bear_offset_z = 0.04
+
+        cup_offset_x_left = -0.27
+        cup_offset_x_right = -0.27
         cup_offset_y = 0
         cup_offset_z = 0.05
-        bottle_offset_x_left = 0.44 - 0.13
-        bottle_offset_x_right = 0.44 - 0.13
+        bottle_offset_x_left = -0.15
+        bottle_offset_x_right = -0.15
         bottle_offset_y = 0
         bottle_offset_z = 0.2
-        teddy_bear_offset_x_left = 0.44 + 0.04
-        teddy_bear_offset_x_right = 0.44 + 0.04
+        teddy_bear_offset_x_left = -0.1
+        teddy_bear_offset_x_right = -0.1
         teddy_bear_offset_y = 0
         teddy_bear_offset_z = 0.04
 
@@ -204,9 +217,9 @@ class MoveWithYolo(object):
 
         self.obj_dict = {"cup": cup_offset_list, "bottle": bottle_offset_list, "teddy bear": teddy_bear_offset_list}
         if x < 0:
-            cur_pose.position.x += (-y / math.sin(58)) + self.obj_dict[obj_name][0]
+            cur_pose.position.x += (z * math.sin(math.radians(58))) + (-y * math.cos(math.radians(58))) + self.obj_dict[obj_name][0]
         else:
-            cur_pose.position.x += (-y / math.sin(58)) + self.obj_dict[obj_name][1]
+            cur_pose.position.x += (z * math.sin(math.radians(58))) + (-y * math.cos(math.radians(58))) + self.obj_dict[obj_name][1]
         cur_pose.position.y += -x + self.obj_dict[obj_name][2]
         cur_pose.position.z = self.obj_dict[obj_name][3]
 
@@ -282,6 +295,7 @@ class MoveWithYolo(object):
 
         cur_pose = self.arm_group.get_current_pose().pose
         cur_pose.position.x += 0.15
+        self.set_base_constraint()
 
         self.arm_group.set_pose_target(cur_pose)
         success = self.arm_group.go(wait=True)
@@ -357,12 +371,19 @@ class MoveWithYolo(object):
         constraint.joint_constraints.append(joint_constraint)
         self.arm_group.set_path_constraints(constraint)
 
-    def pick(self):
-        gripper_value = self.gripper_group.get_current_joint_values()
-        gripper_value[0] = -0.07
-        gripper_value[2] = 0.07
-        self.gripper_group.set_joint_value_target(gripper_value)
-        self.gripper_group.go(wait=True)
+    def pick(self, cur_object_name):
+        if cur_object_name == 'teddy bear':
+            gripper_value = self.gripper_group.get_current_joint_values()
+            gripper_value[0] = -0.01
+            gripper_value[2] = 0.01
+            self.gripper_group.set_joint_value_target(gripper_value)
+            self.gripper_group.go(wait=True)
+        else:
+            gripper_value = self.gripper_group.get_current_joint_values()
+            gripper_value[0] = -0.07
+            gripper_value[2] = 0.07
+            self.gripper_group.set_joint_value_target(gripper_value)
+            self.gripper_group.go(wait=True)
 
     def place(self, name):
         if name == 'bowl':
@@ -456,7 +477,7 @@ if __name__ == '__main__':
         if moveclass.success:
             moveclass.arm_group.clear_path_constraints()
             print('4. [Start] Pick {0}'.format(cur_object_name))
-            moveclass.pick()
+            moveclass.pick(cur_object_name)
             print('4. [End] Pick {0}'.format(cur_object_name))
             print('5. [Start] Place')
             moveclass.place(cur_object_name)
@@ -477,4 +498,5 @@ if __name__ == '__main__':
         # end condition
         if moveclass.end_pick == True:
             print('End Tidy up! Bye Bye')
+            sys.exit()
             break

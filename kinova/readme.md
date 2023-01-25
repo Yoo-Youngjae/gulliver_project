@@ -17,6 +17,7 @@ This project is about Picking and Placing 6 objects with 3 classes. The robot us
     + If possible, install version 470.
   + [Install CUDA](https://developer.nvidia.com/cuda-10.2-download-archive)
   + [Install CUDNN](https://developer.nvidia.com/cudnn)
+    + Should have Nvidia membership
   + [Install YOLO](https://pjreddie.com/darknet/yolo/)
     + Should change GPU,OPENCV,CUDNN to 1 in the Makefile
 ### 2. Kinova Gen3 lite Settings

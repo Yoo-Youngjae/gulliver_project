@@ -1,9 +1,10 @@
+# [latest]yolo & kinova only code
 import sys
 import os
 
 if 'ROS_NAMESPACE' not in os.environ:
     os.environ['ROS_NAMESPACE'] = 'my_gen3_lite'
-
+import random
 import rospy
 import moveit_commander
 import moveit_msgs.msg
@@ -18,7 +19,7 @@ from control_msgs.msg import GripperCommand
 from moveit_msgs.msg import Constraints, JointConstraint
 
 sys.path.append('/home/tidy/Pycharmprojects/gulliver_project/kinova/yolo.py')
-from yolo import net, meta, detect, draw_bounding_box
+from yolo import detect, draw_bounding_box, net, meta
 
 class MoveWithYolo(object):
     def __init__(self):
@@ -103,8 +104,8 @@ class MoveWithYolo(object):
             name, prob, box_info = item
             if prob >= 0.01:
                 draw_bounding_box(cv_image, item)
-                # cv_image = cv2.circle(cv_image, (self.min_x, self.min_y), 2, (0, 255, 0), -1)
-                # cv_image = cv2.circle(cv_image, (320, 240), 3, (0, 0, 255), -1)
+                cv_image = cv2.circle(cv_image, (self.min_x, self.min_y), 2, (0, 255, 0), -1)
+                cv_image = cv2.circle(cv_image, (320, 240), 3, (0, 0, 255), -1)
 
         cv2.imshow('img', cv_image)
         cv2.waitKey(3)
@@ -149,8 +150,21 @@ class MoveWithYolo(object):
         min_x = 0
         min_y = 0
 
-        for i in range(int(x-w/2), int(x+w/2)):
-            for j in range(int(y-h/2), int(y+h/2)):
+        left = int(x-w/2)
+        right = int(x+w/2)
+        top = int(y+h/2)
+        bottom = int(y-h/2)
+        if left < 0:
+            left = 0
+        if right >= 640:
+            right = 639
+        if top >=480:
+            top = 479
+        if bottom < 0:
+            bottom = 0
+
+        for i in range(left, right):
+            for j in range(bottom, top):
                 if self.pc[j][i][2] < depth_min:
                     depth_min = self.pc[j][i][2]
                     if math.isnan(self.pc[j][i][1]):
@@ -202,12 +216,12 @@ class MoveWithYolo(object):
         cup_offset_x_right = -0.27
         cup_offset_y = 0
         cup_offset_z = 0.05
-        bottle_offset_x_left = -0.15
-        bottle_offset_x_right = -0.15
+        bottle_offset_x_left = -0.16
+        bottle_offset_x_right = -0.16
         bottle_offset_y = 0
         bottle_offset_z = 0.2
-        teddy_bear_offset_x_left = -0.1
-        teddy_bear_offset_x_right = -0.1
+        teddy_bear_offset_x_left = -0.13
+        teddy_bear_offset_x_right = -0.13
         teddy_bear_offset_y = 0
         teddy_bear_offset_z = 0.04
 
@@ -294,7 +308,7 @@ class MoveWithYolo(object):
             self.success = False
 
         cur_pose = self.arm_group.get_current_pose().pose
-        cur_pose.position.x += 0.15
+        cur_pose.position.x += 0.18
         self.set_base_constraint()
 
         self.arm_group.set_pose_target(cur_pose)
@@ -459,7 +473,7 @@ if __name__ == '__main__':
     while moveclass.center_rgb[0] is None:
         print('Detecting ...')
         rospy.sleep(1)
-    print('2. [End] Yolo detection')
+    print('\n2. [End] Yolo detection')
 
     while True:
         cur_object_name = moveclass.name
@@ -498,5 +512,4 @@ if __name__ == '__main__':
         # end condition
         if moveclass.end_pick == True:
             print('End Tidy up! Bye Bye')
-            sys.exit()
-            break
+            os.system("pkill -f -9 'python gen3_lite_tidy_up.py'")

@@ -188,6 +188,7 @@ def draw_bounding_box(img, item):
     # end = (x+xw,y+yh)
 
     cv2.rectangle(img, start, end, color, 2)  # todo rectangle error  WHY??????
+
     cv2.putText(img, name, (int(x - 10), int(y - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
     return img
 
@@ -197,7 +198,7 @@ def image_callback(img_msg):
     cv_image = bridge.imgmsg_to_cv2(img_msg, "passthrough")
     cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
     r = detect(net, meta, cv_image)
-    print(r)
+    # print(r)
     for item in r:
         name, prob, box_info = item
         if prob >= 0.05:
@@ -212,16 +213,16 @@ depth = None
 
 def pc_callback(point_msg):
     pc = ros_numpy.numpify(point_msg)
-    # for center in center_list:
-    #     x = center[0]
-    #     y = center[1]
-    #     center_coordinate.append([pc[y][x][0], pc[y][x][1], pc[y][x][2]])
+    for center in center_list:
+        x = center[0]
+        y = center[1]
+        print(pc[y][x][2])
 
 
 def listener():
     rospy.init_node('listener', anonymous=True)
     rospy.Subscriber("/camera/color/image_raw", Image, image_callback)
-    # rospy.Subscriber("/camera/depth_registered/points", PointCloud2, pc_callback)
+    rospy.Subscriber("/camera/depth_registered/points", PointCloud2, pc_callback)
     rospy.spin()
 
 net = load_net(makedir("cfg/yolov3.cfg"), makedir("yolov3.weights"), 0)

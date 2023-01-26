@@ -21,10 +21,12 @@ class MoveRobot(object):
         super(MoveRobot, self).__init__()
         moveit_commander.roscpp_initialize(sys.argv)
         rospy.init_node('vr_controller_point_arm_move_end_effector')
-        # self.hand_point_sub = rospy.Subscriber('rightHandPoint', Point, self.hand_point_callback)
         self.x = None
         self.y = None
         self.z = None
+        self.prev_x = 0
+        self.prev_y = 0
+        self.prev_z = 0
 
         try:
             self.is_gripper_present = rospy.get_param(rospy.get_namespace() + "is_gripper_present", False)
@@ -46,7 +48,7 @@ class MoveRobot(object):
                 queue_size=20)
 
             self.arm_group.set_max_velocity_scaling_factor(1)
-            self.arm_group.set_max_acceleration_scaling_factor(0.5)
+            self.arm_group.set_max_acceleration_scaling_factor(1)
 
             if self.is_gripper_present:
                 gripper_group_name = "gripper"
@@ -58,18 +60,32 @@ class MoveRobot(object):
         else:
             self.is_init_success = True
 
+        self.hand_point_sub()
+
     def hand_point_callback(self, data):
-        print(data) # todo : for test
-        # self.hand_point_data = data
+        # todo : for test
+        print(data)
         self.x = data.x
         self.y = data.y
         self.z = data.z
-        move_robot.arm_group.set_position_target([self.x, self.y, self.z])
-        move_robot.arm_group.go(True, wait=True)
+
+        cur_pose = self.arm_group.get_current_pose().pose
+        x = cur_pose.position.x
+        y = cur_pose.position.y
+        z = cur_pose.position.z
+        self.arm_group.set_position_target([self.x-self.prev_x+x, self.y-self.prev_y+y, self.z-self.prev_z+z])
+        self.arm_group.go(True, wait=True)
+        self.prev_x = self.x
+        self.prev_y = self.y
+        self.prev_z = self.z
+        rospy.sleep(5)
+
+    def hand_point_sub(self):
+        rospy.Subscriber('rightHandPoint', Point, self.hand_point_callback)
+        rospy.spin()
+
 
 
 if __name__ == '__main__':
     move_robot = MoveRobot()
-    while True:
-        hand_point_sub = rospy.Subscriber('rightHandPoint', Point, move_robot.hand_point_callback)
 

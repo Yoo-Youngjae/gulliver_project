@@ -1,3 +1,4 @@
+# [latest] yolo & kinova & human vr code
 import sys
 import os
 
@@ -37,6 +38,7 @@ class MoveRobotWithVR(object):
         self.coordinate_list = []
         self.center_pointcloud = (None, None, None) # x, y, z in pointcloud
         self.center_rgb_list = []
+        self.box_list = []
         self.name_list = []
         self.object_id = None
         self.obj_id_num = 0
@@ -94,20 +96,37 @@ class MoveRobotWithVR(object):
         bridge = CvBridge()
         cv_image = bridge.imgmsg_to_cv2(img_msg, "passthrough")
         cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
-        if self.disable_img_sub == False:
-            r = detect(net, meta, cv_image)
-            for item in r:
-                name, prob, box_info = item
-                self.name_list.append(name)
-                if prob >= 0.01:
-                    img = draw_bounding_box(cv_image, item)
-                    center_rgb = (int(box_info[0]), int(box_info[1]))
-                    self.center_rgb_list.append(center_rgb)
-                    print(center_rgb)
-            self.disable_img_sub = True
+        r = detect(net, meta, cv_image)
 
+        for item in r:
+            name, prob, box_info = item
+            if prob >= 0.01:
+                draw_bounding_box(cv_image, item)
         cv2.imshow('img', cv_image)
         cv2.waitKey(3)
+
+        name_list = []
+        if self.disable_img_sub == False:
+            # r = detect(net, meta, cv_image)
+            for item in r:
+                name, prob, box_info = item
+                name_list.append(name)
+                if name not in ['cup', 'bowl', 'bottle', 'teddy bear']:
+                    continue
+                self.name_list.append(name)
+                if prob >= 0.01:
+                    # draw_bounding_box(cv_image, item)
+                    center_rgb = (int(box_info[0]), int(box_info[1]))
+                    self.center_rgb_list.append(center_rgb)
+                    self.box_list.append(box_info)
+
+            if len(self.center_rgb_list) != 3:
+                self.center_rgb_list = []
+                self.box_list = []
+                return
+            self.disable_img_sub = True
+
+
 
     def pc_callback(self, point_msg):
         self.pc = ros_numpy.numpify(point_msg)
@@ -121,10 +140,50 @@ class MoveRobotWithVR(object):
                 self.obj_id_num = -1
 
     def get_object_pc(self):
-        for center_rgb in self.center_rgb_list:
-            x = center_rgb[0]
-            y = center_rgb[1]
-            self.coordinate_list.append([self.pc[y][x][0], self.pc[y][x][1], self.pc[y][x][2]])
+        for center_rgb, box_info in zip(self.center_rgb_list, self.box_list):
+            x = int(box_info[0])
+            y = int(box_info[1])
+            w = int(box_info[2])
+            h = int(box_info[3])
+            center_x = center_rgb[0]
+            center_y = center_rgb[1]
+            depth_min = 1
+            min_x = 0
+            min_y = 0
+
+            left = int(x - w / 2)
+            right = int(x + w / 2)
+            top = int(y + h / 2)
+            bottom = int(y - h / 2)
+            if left < 0:
+                left = 0
+            if right >= 640:
+                right = 639
+            if top >= 480:
+                top = 479
+            if bottom < 0:
+                bottom = 0
+
+            for i in range(left, right):
+                for j in range(bottom, top):
+                    if self.pc[j][i][2] < depth_min:
+                        depth_min = self.pc[j][i][2]
+                        if math.isnan(self.pc[j][i][1]):
+                            continue
+                        min_x = i
+                        min_y = j
+            self.min_x = min_x
+            self.min_y = min_y
+
+            goal_x = self.pc[center_y][center_x][0]
+            goal_y = self.pc[min_y][min_x][1]
+            while math.isnan(goal_x) or math.isnan(goal_y):
+                print("Value is Nan")
+                goal_x = self.pc[center_y][center_x][0]
+                goal_y = self.pc[min_y][min_x][1]
+
+            pc_coordinate = [goal_x, goal_y, depth_min]
+            self.coordinate_list.append(pc_coordinate)
         return self.coordinate_list
 
     def rotate_joints(self):
@@ -194,18 +253,31 @@ class MoveRobotWithVR(object):
 
         cur_pose = self.arm_group.get_current_pose().pose
 
-        cup_offset_x_left = 0.44 - 0.05
-        cup_offset_x_right = 0.44 - 0.05
+        # cup_offset_x_left = 0.44 - 0.05
+        # cup_offset_x_right = 0.44 - 0.05
+        # cup_offset_y = 0
+        # cup_offset_z = 0.05
+        # bottle_offset_x_left = 0.44 - 0.08
+        # bottle_offset_x_right = 0.44 - 0.08
+        # bottle_offset_y = 0
+        # bottle_offset_z = 0.2
+        # teddy_bear_offset_x_left = 0.44 + 0.01
+        # teddy_bear_offset_x_right = 0.44 + 0.01
+        # teddy_bear_offset_y = 0
+        # teddy_bear_offset_z = 0.03
+
+        cup_offset_x_left = -0.27
+        cup_offset_x_right = -0.27
         cup_offset_y = 0
         cup_offset_z = 0.05
-        bottle_offset_x_left = 0.44 - 0.13
-        bottle_offset_x_right = 0.44 - 0.13
+        bottle_offset_x_left = -0.15
+        bottle_offset_x_right = -0.15
         bottle_offset_y = 0
         bottle_offset_z = 0.2
-        teddy_bear_offset_x_left = 0.44 + 0.04
-        teddy_bear_offset_x_right = 0.44 + 0.04
+        teddy_bear_offset_x_left = -0.1
+        teddy_bear_offset_x_right = -0.1
         teddy_bear_offset_y = 0
-        teddy_bear_offset_z = 0.03
+        teddy_bear_offset_z = 0.04
 
         cup_offset_list = [cup_offset_x_left, cup_offset_x_right, cup_offset_y, cup_offset_z]
         bottle_offset_list = [bottle_offset_x_left, bottle_offset_x_right, bottle_offset_y, bottle_offset_z]
@@ -213,9 +285,9 @@ class MoveRobotWithVR(object):
 
         self.obj_dict = {"cup": cup_offset_list, "bottle": bottle_offset_list, "teddy bear": teddy_bear_offset_list}
         if x < 0:
-            cur_pose.position.x += (-y / math.sin(58)) + self.obj_dict[obj_name][0]
+            cur_pose.position.x += (z * math.sin(math.radians(58))) + (-y * math.cos(math.radians(58))) + self.obj_dict[obj_name][0]
         else:
-            cur_pose.position.x += (-y / math.sin(58)) + self.obj_dict[obj_name][1]
+            cur_pose.position.x += (z * math.sin(math.radians(58))) + (-y * math.cos(math.radians(58))) + self.obj_dict[obj_name][1]
         cur_pose.position.y += -x + self.obj_dict[obj_name][2]
         cur_pose.position.z = self.obj_dict[obj_name][3]
 
@@ -265,18 +337,28 @@ class MoveRobotWithVR(object):
 
         cur_pose = self.arm_group.get_current_pose().pose
         cur_pose.position.x += 0.15
+        self.set_base_constraint()
+        # self.set_joint_5_constraint()
 
         self.arm_group.set_pose_target(cur_pose)
         self.arm_group.go(wait=True)
 
         return cur_pose
 
-    def pick(self):
-        gripper_value = self.gripper_group.get_current_joint_values()
-        gripper_value[0] = -0.07
-        gripper_value[2] = 0.07
-        self.gripper_group.set_joint_value_target(gripper_value)
-        self.gripper_group.go(wait=True)
+
+    def pick(self, cur_object_id):
+        if cur_object_id == 1:
+            gripper_value = self.gripper_group.get_current_joint_values()
+            gripper_value[0] = -0.01
+            gripper_value[2] = 0.01
+            self.gripper_group.set_joint_value_target(gripper_value)
+            self.gripper_group.go(wait=True)
+        else:
+            gripper_value = self.gripper_group.get_current_joint_values()
+            gripper_value[0] = -0.07
+            gripper_value[2] = 0.07
+            self.gripper_group.set_joint_value_target(gripper_value)
+            self.gripper_group.go(wait=True)
 
     def open_gripper(self):
         gripper_value = self.gripper_group.get_current_joint_values()
@@ -317,24 +399,38 @@ class MoveRobotWithVR(object):
             self.arm_group.set_joint_value_target(joint_positions)
             self.arm_group.go(wait=True)
 
-            cur_pose = self.arm_group.get_current_pose().pose
-            cur_pose.position.x = place_dict[id][0]
-            cur_pose.position.y = place_dict[id][1]
-            cur_pose.position.z = place_dict[id][2]
-            self.arm_group.set_pose_target(cur_pose)
-            self.arm_group.go(wait=True)
+            if id == 0:
+                joint_positions = self.arm_group.get_current_joint_values()
+                joint_positions[0] = -2.6651904188298783
+                self.arm_group.set_joint_value_target(joint_positions)
+                self.arm_group.go(wait=True)
+
+                joint_positions = self.arm_group.get_current_joint_values()
+                joint_positions[2] = 0.8050075511359198
+                self.arm_group.set_joint_value_target(joint_positions)
+                self.arm_group.go(wait=True)
+            else:
+                cur_pose = self.arm_group.get_current_pose().pose
+                cur_pose.position.x = place_dict[id][0]
+                cur_pose.position.y = place_dict[id][1]
+                cur_pose.position.z = place_dict[id][2]
+                self.arm_group.set_pose_target(cur_pose)
+                self.arm_group.go(wait=True)
 
 
 if __name__ == '__main__':
     moveclass = MoveRobotWithVR()
     # init variables
     moveclass.home_pose()
+    moveclass.open_gripper()
     moveclass.center_rgb_list = []
     object_list = []
 
     moveclass.disable_img_sub = False
     while len(moveclass.center_rgb_list) != 3:
+        print(len(moveclass.center_rgb_list))
         pass
+    print(moveclass.center_rgb_list)
     if len(moveclass.center_rgb_list) == 3:
         # todo: try without initializing the value
         pc_coordinate = moveclass.get_object_pc()
@@ -351,12 +447,13 @@ if __name__ == '__main__':
         pub_array.data = object_list
         start_time = time.time()
         while time.time() <= start_time + 5:
+            print('publish array', pub_array)
             obj_list_pub.publish(pub_array)
 
     activation_pub = rospy.Publisher('vr_activate', Bool, queue_size=20)
     object_id = None
     activation_pub.publish(True)
-
+    print('object_list', object_list)
     sub_list_1 = [object_list[0], object_list[1], object_list[2]]
     sub_list_2 = [object_list[3], object_list[4], object_list[5]]
     sub_list_3 = [object_list[6], object_list[7], object_list[8]]
@@ -382,12 +479,11 @@ if __name__ == '__main__':
                         if 'cup' in moveclass.name_list:
                             object_name_idx = moveclass.name_list.index('cup')
                         else:
-                            object_name_idx = moveclass.name_list.index('cup')
+                            object_name_idx = moveclass.name_list.index('bowl')
                         moveclass.pick_cup(moveclass.coordinate_list[object_name_idx])
-                    moveclass.pick()
-                    moveclass.place(object_id)
-                    moveclass.open_gripper()
+                    moveclass.pick(object_id)
                     moveclass.home_pose()
+                    moveclass.open_gripper()
                     activation_pub.publish(True)
 
 

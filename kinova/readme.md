@@ -27,7 +27,7 @@ This project is about Picking and Placing 6 objects with 3 classes. The robot us
   +  랜포트 하나는 이미 로봇에 연결되어 있고, 노트북에 있는 랜포트 빼서 사용할 노트북에 연결하면 됨
   +  사용할 노트북의 network settings에 들어가서 wired에 profile 추가
   +  IPv4에서 address 192.168.2.11, subnet mask 255.255.255.0로 설정
-  +  192.168.2.10으로 webapp 
+  +  192.168.2.10으로 webapp 들어가지면 성공
 ### 3. Launch
 + Start kortex_driver
   ```
